@@ -205,7 +205,7 @@ export default function MessagingPage() {
           </div>
 
           {/* Chat Area */}
-          <div className="col-span-12 md:col-span-8 lg:col-span-9">
+          <div className="col-span-12 md:col-span-8 lg:col-span-6">
             <Card className="h-full flex flex-col">
               {selectedChat ? (
                 <>
@@ -313,7 +313,7 @@ export default function MessagingPage() {
                   </div>
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex-1 flex items-start justify-center pt-20">
                   <div className="text-center">
                     <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -326,6 +326,13 @@ export default function MessagingPage() {
                 </div>
               )}
             </Card>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-6">
+              <RightSidebar />
+            </div>
           </div>
         </div>
       </div>
