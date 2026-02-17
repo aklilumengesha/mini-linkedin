@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import { Button } from "@/components/Button";
+import { RightSidebar } from "@/components/RightSidebar";
 import { 
   Bell, 
   ThumbsUp, 
@@ -171,7 +172,10 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-9">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -310,6 +314,15 @@ export default function NotificationsPage() {
             )}
           </CardContent>
         </Card>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-6">
+              <RightSidebar />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import { Button } from "@/components/Button";
+import { RightSidebar } from "@/components/RightSidebar";
 import { LoadingSpinner } from "@/components/LoadingComponents";
 import { Users, UserPlus, UserCheck, Building, MapPin } from "lucide-react";
 
@@ -97,7 +98,7 @@ export default function NetworkPage() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -180,6 +181,13 @@ export default function NetworkPage() {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-6">
+              <RightSidebar />
+            </div>
           </div>
         </div>
       </div>

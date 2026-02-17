@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { RightSidebar } from "@/components/RightSidebar";
 import { 
   MessageSquare, 
   Search, 

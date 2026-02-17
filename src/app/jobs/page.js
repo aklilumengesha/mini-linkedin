@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
+import { RightSidebar } from "@/components/RightSidebar";
 import { LoadingSpinner } from "@/components/LoadingComponents";
 import { 
   Briefcase, 
@@ -190,7 +191,7 @@ export default function JobsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -283,6 +284,13 @@ export default function JobsPage() {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-6">
+              <RightSidebar />
+            </div>
           </div>
         </div>
       </div>
