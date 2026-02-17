@@ -102,10 +102,12 @@ export function Header() {
                 </Link>
 
                 {/* Messaging */}
-                <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group">
-                  <MessageSquare className="h-6 w-6 mb-0.5" />
-                  <span className="text-xs font-medium">Messaging</span>
-                </button>
+                <Link href="/messaging">
+                  <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group">
+                    <MessageSquare className="h-6 w-6 mb-0.5" />
+                    <span className="text-xs font-medium">Messaging</span>
+                  </button>
+                </Link>
 
                 {/* Notifications */}
                 <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group relative">
