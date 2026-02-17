@@ -94,10 +94,12 @@ export function Header() {
                 </Link>
 
                 {/* Jobs */}
-                <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group">
-                  <Briefcase className="h-6 w-6 mb-0.5" />
-                  <span className="text-xs font-medium">Jobs</span>
-                </button>
+                <Link href="/jobs">
+                  <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group">
+                    <Briefcase className="h-6 w-6 mb-0.5" />
+                    <span className="text-xs font-medium">Jobs</span>
+                  </button>
+                </Link>
 
                 {/* Messaging */}
                 <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group">
