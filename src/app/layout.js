@@ -28,6 +28,12 @@ export const metadata = {
   ],
   authors: [{ name: "LinkedIn Team" }],
   creator: "LinkedIn",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/linkedin-logo.svg", type: "image/svg+xml" },
+    ],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
