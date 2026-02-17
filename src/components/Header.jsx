@@ -110,10 +110,12 @@ export function Header() {
                 </Link>
 
                 {/* Notifications */}
-                <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group relative">
-                  <Bell className="h-6 w-6 mb-0.5" />
-                  <span className="text-xs font-medium">Notifications</span>
-                </button>
+                <Link href="/notifications">
+                  <button className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors group relative">
+                    <Bell className="h-6 w-6 mb-0.5" />
+                    <span className="text-xs font-medium">Notifications</span>
+                  </button>
+                </Link>
 
                 {/* Profile Dropdown */}
                 <div className="relative">
