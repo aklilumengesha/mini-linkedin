@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "./Button";
 import { getInitials } from "@/lib/utils";
+import Image from "next/image";
 import { 
   Home, 
   LogOut, 
@@ -21,6 +22,17 @@ export function Header() {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
+
+  // Fetch user profile to get profile picture
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/users/${user.uid}`)
+        .then(res => res.json())
+        .then(data => setUserProfile(data))
+        .catch(err => console.error('Error fetching user profile:', err));
+    }
+  }, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -103,9 +115,21 @@ export function Header() {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex flex-col items-center px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold mb-0.5">
-                      {getInitials(user?.displayName || user?.email || "U")}
-                    </div>
+                    {userProfile?.profilePicture ? (
+                      <div className="w-6 h-6 rounded-full overflow-hidden mb-0.5 border border-gray-300">
+                        <Image
+                          src={userProfile.profilePicture}
+                          alt="Profile"
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold mb-0.5">
+                        {getInitials(user?.displayName || user?.email || "U")}
+                      </div>
+                    )}
                     <span className="text-xs font-medium flex items-center">
                       Me
                       <svg className="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -123,12 +147,24 @@ export function Header() {
                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                         <div className="px-4 py-3 border-b border-gray-200">
                           <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-lg font-semibold">
-                              {getInitials(user?.displayName || user?.email || "U")}
-                            </div>
+                            {userProfile?.profilePicture ? (
+                              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200">
+                                <Image
+                                  src={userProfile.profilePicture}
+                                  alt="Profile"
+                                  width={48}
+                                  height={48}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-lg font-semibold">
+                                {getInitials(user?.displayName || user?.email || "U")}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 truncate">
-                                {user?.displayName || "User"}
+                                {userProfile?.name || user?.displayName || "User"}
                               </p>
                               <p className="text-xs text-gray-500 truncate">
                                 {user?.email}
