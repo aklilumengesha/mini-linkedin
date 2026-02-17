@@ -33,14 +33,11 @@ export default function LoginPage() {
       if (response.ok) {
         const userData = await response.json();
 
-        const isProfileComplete = !!(
-          userData.name &&
-          userData.headline &&
-          userData.profilePicture
-        );
+        // Check if user has at least basic profile info (name is enough)
+        const isProfileComplete = !!(userData.name);
 
         if (isProfileComplete) {
-          console.log("Profile is complete, redirecting to home");
+          console.log("Profile exists, redirecting to home");
           router.push("/");
         } else {
           console.log(

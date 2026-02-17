@@ -7,7 +7,7 @@ import { PostFeed } from "@/components/PostFeed";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
-import { ProfileLoadingScreen } from "@/components/LoadingScreen";
+import { ProfileLoadingScreen, LoadingSpinner } from "@/components/LoadingComponents";
 import {
   Edit3,
   Save,
@@ -154,7 +154,14 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <ProfileLoadingScreen />;
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!profile) {

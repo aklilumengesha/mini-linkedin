@@ -76,6 +76,12 @@ const AnimatedCounter = ({ value, duration = 2, suffix = "" }) => {
 export default function Home() {
   const { user, loading } = useAuth();
 
+  // Debug: Log user state
+  useEffect(() => {
+    console.log("Home page - User:", user);
+    console.log("Home page - Loading:", loading);
+  }, [user, loading]);
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">

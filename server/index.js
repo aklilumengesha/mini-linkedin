@@ -52,6 +52,7 @@ app.get("/", (req, res) => {
 // MongoDB connection with better error handling
 const connectDB = async () => {
   try {
+    console.log("DEBUG: MONGODB_URI =", process.env.MONGODB_URI);
     const mongoURI =
       process.env.MONGODB_URI || "mongodb://localhost:27017/linkedin";
 
