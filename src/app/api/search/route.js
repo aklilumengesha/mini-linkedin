@@ -28,14 +28,9 @@ export async function GET(request) {
 
       if (usersResponse.ok) {
         users = await usersResponse.json();
-        console.log(
-          "Found users:",
-          users.length,
-          users.map((u) => u.name || u._id)
-        );
       } else {
         const errorText = await usersResponse.text();
-        console.log("Users search failed:", errorText);
+        console.error("Users search failed:", errorText);
       }
     } catch (error) {
       console.error("Error searching users:", error);
@@ -47,14 +42,12 @@ export async function GET(request) {
       )}`;
 
       const postsResponse = await fetch(postsUrl);
-      console.log("Posts response status:", postsResponse.status);
 
       if (postsResponse.ok) {
         posts = await postsResponse.json();
-        console.log("Found posts:", posts.length);
       } else {
         const errorText = await postsResponse.text();
-        console.log("Posts search failed:", errorText);
+        console.error("Posts search failed:", errorText);
       }
     } catch (error) {
       console.error("Error searching posts:", error);
@@ -65,12 +58,6 @@ export async function GET(request) {
       posts: posts.slice(0, 3),
       total: users.length + posts.length,
     };
-
-    console.log("✅ Final search results:", {
-      userCount: results.users.length,
-      postCount: results.posts.length,
-      total: results.total,
-    });
 
     return NextResponse.json(results);
   } catch (error) {

@@ -60,29 +60,13 @@ export default function ProfileCompletionPage() {
     setError("");
 
     try {
-      console.log(
-        "Starting upload for file:",
-        file.name,
-        "Size:",
-        file.size,
-        "Type:",
-        file.type
-      );
-
       const formDataObj = new FormData();
       formDataObj.append("profilePicture", file);
 
-      console.log("Sending request to /api/upload/profile-picture");
       const response = await fetch("/api/upload/profile-picture", {
         method: "POST",
         body: formDataObj,
       });
-
-      console.log("Response status:", response.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -102,7 +86,6 @@ export default function ProfileCompletionPage() {
       }
 
       const data = await response.json();
-      console.log("Upload successful:", data);
 
       setFormData((prev) => ({
         ...prev,

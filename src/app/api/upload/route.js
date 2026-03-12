@@ -3,9 +3,7 @@ const API_BASE_URL =
 
 export async function POST(request) {
   try {
-    console.log("Frontend upload API route hit");
     const formData = await request.formData();
-    console.log("Formdata received, forwarding to backend...");
 
     const backendResponse = await fetch(`${API_BASE_URL}/upload`, {
       method: "POST",
@@ -13,8 +11,6 @@ export async function POST(request) {
     });
 
     const contentType = backendResponse.headers.get("content-type");
-    console.log("Backend response status:", backendResponse.status);
-    console.log("Backend response content-type:", contentType);
 
     if (!backendResponse.ok) {
       let errorMessage = "Upload failed";

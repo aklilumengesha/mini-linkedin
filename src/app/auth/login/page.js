@@ -37,18 +37,11 @@ export default function LoginPage() {
         const isProfileComplete = !!(userData.name);
 
         if (isProfileComplete) {
-          console.log("Profile exists, redirecting to home");
           router.push("/");
         } else {
-          console.log(
-            "Profile is incomplete, redirecting to profile completion"
-          );
           router.push("/profile/complete");
         }
       } else {
-        console.log(
-          "User not found in database, redirecting to profile completion"
-        );
         router.push("/profile/complete");
       }
     } catch (error) {
@@ -100,7 +93,7 @@ export default function LoginPage() {
           }),
         });
       } catch (profileError) {
-        console.log("User profile creation/update response:", profileError);
+        // Profile creation failed, continue anyway
       }
 
       await checkUserProfileAndRedirect(user);

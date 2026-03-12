@@ -7,17 +7,12 @@ export async function GET(request, { params }) {
   try {
     const { id } = params;
 
-    console.log("Frontend API route called with ID:", id);
-    console.log("Using API_BASE_URL:", API_BASE_URL);
-
     const response = await fetch(`${API_BASE_URL}/users/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
-
-    console.log("Backend response status:", response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({

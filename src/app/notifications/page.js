@@ -156,7 +156,6 @@ export default function NotificationsPage() {
   };
 
   const handleConnectionResponse = (id, accept) => {
-    console.log(accept ? "Accepted" : "Declined", "connection request", id);
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
 

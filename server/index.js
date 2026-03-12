@@ -52,7 +52,6 @@ app.get("/", (req, res) => {
 // MongoDB connection with better error handling
 const connectDB = async () => {
   try {
-    console.log("DEBUG: MONGODB_URI =", process.env.MONGODB_URI);
     const mongoURI =
       process.env.MONGODB_URI || "mongodb://localhost:27017/linkedin";
 
@@ -60,8 +59,6 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-
-    console.log("MongoDB connected successfully");
   } catch (error) {
     console.error("MongoDB connection error:", error.message);
     if (process.env.NODE_ENV !== "production") {
@@ -73,7 +70,6 @@ const connectDB = async () => {
 
 // Handle MongoDB connection events
 mongoose.connection.on("disconnected", () => {
-  console.log("MongoDB disconnected. Attempting to reconnect...");
   if (process.env.NODE_ENV === "production") {
     connectDB();
   }
@@ -83,38 +79,17 @@ mongoose.connection.on("error", (err) => {
   console.error("MongoDB error:", err);
 });
 
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  next();
-});
-
-// Routes with better error handling and debugging
+// Routes
 try {
-  console.log("Loading route files...");
-
   const usersRouter = require("./routes/users");
-  console.log("Users router loaded successfully");
-
   const postsRouter = require("./routes/posts");
-  console.log("Posts router loaded successfully");
-
   const uploadRouter = require("./routes/upload");
-  console.log("Upload router loaded successfully");
 
   app.use("/api/users", usersRouter);
-  console.log("Users routes registered at /api/users");
-
   app.use("/api/posts", postsRouter);
-  console.log("Posts routes registered at /api/posts");
-
   app.use("/api/upload", uploadRouter);
-  console.log("Upload routes registered at /api/upload");
-
-  console.log("All routes loaded and registered successfully");
 } catch (error) {
   console.error("Error loading routes:", error);
-  console.error("Stack trace:", error.stack);
 }
 
 // Error handling middleware
@@ -128,7 +103,6 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use("*", (req, res) => {
-  console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     message: "Route not found",
     path: req.originalUrl,
@@ -138,10 +112,8 @@ app.use("*", (req, res) => {
 
 // Graceful shutdown handling
 process.on("SIGTERM", async () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
   try {
     await mongoose.connection.close();
-    console.log("MongoDB connection closed.");
     process.exit(0);
   } catch (error) {
     console.error("Error closing MongoDB connection:", error);
@@ -150,10 +122,8 @@ process.on("SIGTERM", async () => {
 });
 
 process.on("SIGINT", async () => {
-  console.log("SIGINT received. Shutting down gracefully...");
   try {
     await mongoose.connection.close();
-    console.log("MongoDB connection closed.");
     process.exit(0);
   } catch (error) {
     console.error("Error closing MongoDB connection:", error);
@@ -166,9 +136,7 @@ connectDB();
 
 // Start server
 const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`Health check available at: http://localhost:${PORT}/health`);
+  // Server started successfully
 });
 
 // Handle server errors

@@ -96,7 +96,7 @@ export default function RegisterPage() {
       try {
         await createUserProfile(user);
       } catch (profileError) {
-        console.log("User profile creation response:", profileError);
+        // Profile creation failed, continue anyway
       }
 
       router.push("/profile/complete");

@@ -30,11 +30,8 @@ export default function NetworkPage() {
       const response = await fetch("/api/users");
       if (response.ok) {
         const data = await response.json();
-        console.log("All users from API:", data);
-        console.log("Current user UID:", user?.uid);
         // Filter out current user
         const filteredUsers = data.filter((u) => u.firebaseUid !== user?.uid);
-        console.log("Filtered users (excluding current):", filteredUsers);
         setUsers(filteredUsers);
       } else {
         console.error("Failed to fetch users:", response.status);

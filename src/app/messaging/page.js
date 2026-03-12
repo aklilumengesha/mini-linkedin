@@ -113,7 +113,6 @@ export default function MessagingPage() {
     e.preventDefault();
     if (message.trim() && selectedChat) {
       // In a real app, send message to backend
-      console.log("Sending message:", message);
       setMessage("");
     }
   };
