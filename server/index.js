@@ -94,11 +94,11 @@ const verifySupabaseConnection = async () => {
 // Routes
 try {
   const usersRouter = require("./routes/users");
-  const postsRouter = require("./routes/posts");
+  // const postsRouter = require("./routes/posts"); // Temporarily disabled - needs Supabase conversion
   const uploadRouter = require("./routes/upload");
 
   app.use("/api/users", usersRouter);
-  app.use("/api/posts", postsRouter);
+  // app.use("/api/posts", postsRouter); // Temporarily disabled
   app.use("/api/upload", uploadRouter);
 } catch (error) {
   console.error("Error loading routes:", error);
