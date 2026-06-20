@@ -49,34 +49,107 @@ app.get("/", (req, res) => {
   });
 });
 
-// MongoDB connection with better error handling
-const connectDB = async () => {
+// MongoDB connection with enhanced SSL/TLS configuration and error handling
+const connectDB = async (retryCount = 0) => {
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 5000;
+
   try {
     const mongoURI =
       process.env.MONGODB_URI || "mongodb://localhost:27017/linkedin";
 
-    await mongoose.connect(mongoURI, {
+    // Enhanced connection options for MongoDB Atlas with proper SSL/TLS configuration
+    const connectionOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    });
+      
+      // SSL/TLS Configuration - Critical for MongoDB Atlas
+      ssl: true,
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      
+      // Connection timeout settings
+      serverSelectionTimeoutMS: 10000, // 10 seconds to select a server
+      socketTimeoutMS: 45000, // 45 seconds socket timeout
+      connectTimeoutMS: 10000, // 10 seconds to establish initial connection
+      
+      // Connection pool settings for better performance
+      maxPoolSize: 10, // Maximum number of connections in the pool
+      minPoolSize: 2, // Minimum number of connections to maintain
+      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+      
+      // Retry configuration
+      retryWrites: true,
+      retryReads: true,
+      
+      // Write concern
+      w: "majority",
+      
+      // Family preference for DNS resolution (IPv4 first)
+      family: 4,
+    };
+
+    await mongoose.connect(mongoURI, connectionOptions);
+    
+    console.log("✓ MongoDB connected successfully");
+    console.log(`  Database: ${mongoose.connection.name}`);
+    console.log(`  Host: ${mongoose.connection.host}`);
   } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    if (process.env.NODE_ENV !== "production") {
-      process.exit(1);
+    console.error("✗ MongoDB connection error:", error.message);
+    
+    // Detailed error logging for debugging
+    if (error.name === "MongoServerSelectionError") {
+      console.error("  Issue: Unable to reach MongoDB server");
+      console.error("  Check: Network connectivity and firewall settings");
+    } else if (error.message.includes("SSL") || error.message.includes("TLS")) {
+      console.error("  Issue: SSL/TLS handshake failed");
+      console.error("  Check: MongoDB Atlas IP whitelist and connection string");
+    } else if (error.message.includes("authentication")) {
+      console.error("  Issue: Authentication failed");
+      console.error("  Check: Username and password in connection string");
     }
-    setTimeout(connectDB, 5000);
+    
+    // Retry logic with exponential backoff
+    if (retryCount < MAX_RETRIES) {
+      const delay = RETRY_DELAY * Math.pow(2, retryCount);
+      console.log(`  Retrying connection in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      setTimeout(() => connectDB(retryCount + 1), delay);
+    } else {
+      console.error(`  Failed to connect after ${MAX_RETRIES} attempts`);
+      if (process.env.NODE_ENV !== "production") {
+        process.exit(1);
+      }
+    }
   }
 };
 
-// Handle MongoDB connection events
+// Handle MongoDB connection events with improved logging
+mongoose.connection.on("connected", () => {
+  console.log("✓ Mongoose connected to MongoDB");
+});
+
 mongoose.connection.on("disconnected", () => {
+  console.warn("⚠ Mongoose disconnected from MongoDB");
   if (process.env.NODE_ENV === "production") {
-    connectDB();
+    console.log("  Attempting to reconnect...");
+    setTimeout(connectDB, 5000);
   }
 });
 
+mongoose.connection.on("reconnected", () => {
+  console.log("✓ Mongoose reconnected to MongoDB");
+});
+
 mongoose.connection.on("error", (err) => {
-  console.error("MongoDB error:", err);
+  console.error("✗ MongoDB connection error:", err.message);
+  
+  // Handle specific SSL/TLS errors
+  if (err.message.includes("SSL") || err.message.includes("TLS")) {
+    console.error("  SSL/TLS Error Details:");
+    console.error("  - Ensure MongoDB Atlas cluster is accessible");
+    console.error("  - Verify your IP address is whitelisted (0.0.0.0/0 for all IPs)");
+    console.error("  - Check that your connection string includes SSL parameters");
+  }
 });
 
 // Routes
