@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
+const supabase = require("../config/supabase");
 
 // Test route to verify router is working
 router.get("/test", (req, res) => {
@@ -13,7 +13,13 @@ router.get("/test", (req, res) => {
 // Get all users (for testing)
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find({}).select("-__v");
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
     res.json({
       message: "Users fetched successfully",
       count: users.length,
@@ -25,6 +31,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Search users
 router.get("/search", async (req, res) => {
   try {
     const { q } = req.query;
@@ -35,14 +42,25 @@ router.get("/search", async (req, res) => {
 
     const searchQuery = q.trim();
 
-    // Search users by name (case-insensitive)
-    const users = await User.find({
-      name: { $regex: searchQuery, $options: "i" },
-    })
-      .select("firebaseUid name headline bio profilePicture")
+    // Search users by name (case-insensitive using ilike)
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('firebase_uid, name, headline, bio, profile_picture')
+      .ilike('name', `%${searchQuery}%`)
       .limit(10);
 
-    res.json(users);
+    if (error) throw error;
+
+    // Transform to match frontend expectations (convert snake_case to camelCase)
+    const transformedUsers = users.map(user => ({
+      firebaseUid: user.firebase_uid,
+      name: user.name,
+      headline: user.headline,
+      bio: user.bio,
+      profilePicture: user.profile_picture
+    }));
+
+    res.json(transformedUsers);
   } catch (error) {
     console.error("Error searching users:", error);
     res.status(500).json({ message: "Failed to search users" });
@@ -52,12 +70,31 @@ router.get("/search", async (req, res) => {
 // Get user profile
 router.get("/:firebaseUid", async (req, res) => {
   try {
-    const user = await User.findOne({ firebaseUid: req.params.firebaseUid });
-    if (!user) {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('firebase_uid', req.params.firebaseUid)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
       return res.status(404).json({ message: "User not found" });
     }
+    if (error) throw error;
 
-    res.json(user);
+    // Transform to camelCase for frontend compatibility
+    const transformedUser = {
+      firebaseUid: user.firebase_uid,
+      email: user.email,
+      name: user.name,
+      bio: user.bio,
+      headline: user.headline,
+      profilePicture: user.profile_picture,
+      isProfileComplete: user.is_profile_complete,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    };
+
+    res.json(transformedUser);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -66,34 +103,68 @@ router.get("/:firebaseUid", async (req, res) => {
 // Create or update user profile
 router.post("/", async (req, res) => {
   try {
-    const { firebaseUid, email, name, bio, headline, profilePicture } =
-      req.body;
+    const { firebaseUid, email, name, bio, headline, profilePicture } = req.body;
 
-    let user = await User.findOne({ firebaseUid });
+    // Check if user exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('firebase_uid', firebaseUid)
+      .single();
 
-    if (user) {
+    let user;
+
+    if (existingUser) {
       // Update existing user
-      user.name = name || user.name;
-      user.bio = bio !== undefined ? bio : user.bio;
-      user.headline = headline !== undefined ? headline : user.headline;
-      user.profilePicture =
-        profilePicture !== undefined ? profilePicture : user.profilePicture;
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          name: name || existingUser.name,
+          bio: bio !== undefined ? bio : existingUser.bio,
+          headline: headline !== undefined ? headline : existingUser.headline,
+          profile_picture: profilePicture !== undefined ? profilePicture : existingUser.profile_picture,
+          updated_at: new Date().toISOString()
+        })
+        .eq('firebase_uid', firebaseUid)
+        .select()
+        .single();
 
-      await user.save();
+      if (error) throw error;
+      user = data;
     } else {
       // Create new user
-      user = new User({
-        firebaseUid,
-        email,
-        name: name || "",
-        bio: bio || "",
-        headline: headline || "",
-        profilePicture: profilePicture || "",
-      });
-      await user.save();
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          firebase_uid: firebaseUid,
+          email: email,
+          name: name || "",
+          bio: bio || "",
+          headline: headline || "",
+          profile_picture: profilePicture || "",
+          is_profile_complete: false
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      user = data;
     }
 
-    res.status(201).json(user);
+    // Transform to camelCase
+    const transformedUser = {
+      firebaseUid: user.firebase_uid,
+      email: user.email,
+      name: user.name,
+      bio: user.bio,
+      headline: user.headline,
+      profilePicture: user.profile_picture,
+      isProfileComplete: user.is_profile_complete,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    };
+
+    res.status(201).json(transformedUser);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -106,24 +177,43 @@ router.post("/complete-profile", async (req, res) => {
 
     if (!name || !headline || !bio || !profilePicture) {
       return res.status(400).json({
-        message:
-          "All fields are required: name, headline, bio, and profile picture",
+        message: "All fields are required: name, headline, bio, and profile picture",
       });
     }
 
-    const user = await User.findOne({ firebaseUid });
-    if (!user) {
+    const { data: user, error } = await supabase
+      .from('users')
+      .update({
+        name,
+        headline,
+        bio,
+        profile_picture: profilePicture,
+        is_profile_complete: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('firebase_uid', firebaseUid)
+      .select()
+      .single();
+
+    if (error && error.code === 'PGRST116') {
       return res.status(404).json({ message: "User not found" });
     }
+    if (error) throw error;
 
-    user.name = name;
-    user.headline = headline;
-    user.bio = bio;
-    user.profilePicture = profilePicture;
+    // Transform to camelCase
+    const transformedUser = {
+      firebaseUid: user.firebase_uid,
+      email: user.email,
+      name: user.name,
+      bio: user.bio,
+      headline: user.headline,
+      profilePicture: user.profile_picture,
+      isProfileComplete: user.is_profile_complete,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    };
 
-    await user.save();
-
-    res.json(user);
+    res.json(transformedUser);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -135,20 +225,50 @@ router.put("/:firebaseUid", async (req, res) => {
     const { firebaseUid } = req.params;
     const updates = req.body;
 
-    const user = await User.findOne({ firebaseUid });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    // Transform camelCase to snake_case for database
+    const dbUpdates = {};
+    const fieldMap = {
+      name: 'name',
+      bio: 'bio',
+      headline: 'headline',
+      profilePicture: 'profile_picture',
+      isProfileComplete: 'is_profile_complete'
+    };
 
-    // Update fields
     Object.keys(updates).forEach((key) => {
-      if (updates[key] !== undefined) {
-        user[key] = updates[key];
+      if (updates[key] !== undefined && fieldMap[key]) {
+        dbUpdates[fieldMap[key]] = updates[key];
       }
     });
 
-    await user.save();
-    res.json(user);
+    dbUpdates.updated_at = new Date().toISOString();
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(dbUpdates)
+      .eq('firebase_uid', firebaseUid)
+      .select()
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (error) throw error;
+
+    // Transform to camelCase
+    const transformedUser = {
+      firebaseUid: user.firebase_uid,
+      email: user.email,
+      name: user.name,
+      bio: user.bio,
+      headline: user.headline,
+      profilePicture: user.profile_picture,
+      isProfileComplete: user.is_profile_complete,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    };
+
+    res.json(transformedUser);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

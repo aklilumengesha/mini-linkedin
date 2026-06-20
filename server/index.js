@@ -1,5 +1,5 @@
 const express = require("express");
-const mongoose = require("mongoose");
+const supabase = require("./config/supabase");
 const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
@@ -26,13 +26,30 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || "development",
-  });
+app.get("/health", async (req, res) => {
+  try {
+    // Test Supabase connection
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    const dbStatus = error ? 'disconnected' : 'connected';
+    
+    res.status(200).json({
+      status: "OK",
+      database: dbStatus,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "ERROR",
+      database: "disconnected",
+      error: error.message
+    });
+  }
 });
 
 // Root endpoint
@@ -49,108 +66,30 @@ app.get("/", (req, res) => {
   });
 });
 
-// MongoDB connection with enhanced SSL/TLS configuration and error handling
-const connectDB = async (retryCount = 0) => {
-  const MAX_RETRIES = 5;
-  const RETRY_DELAY = 5000;
-
+// Supabase connection verification
+const verifySupabaseConnection = async () => {
   try {
-    const mongoURI =
-      process.env.MONGODB_URI || "mongodb://localhost:27017/linkedin";
-
-    // Enhanced connection options for MongoDB Atlas with proper SSL/TLS configuration
-    const connectionOptions = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      
-      // SSL/TLS Configuration - Critical for MongoDB Atlas
-      ssl: true,
-      tls: true,
-      tlsAllowInvalidCertificates: false,
-      
-      // Connection timeout settings
-      serverSelectionTimeoutMS: 10000, // 10 seconds to select a server
-      socketTimeoutMS: 45000, // 45 seconds socket timeout
-      connectTimeoutMS: 10000, // 10 seconds to establish initial connection
-      
-      // Connection pool settings for better performance
-      maxPoolSize: 10, // Maximum number of connections in the pool
-      minPoolSize: 2, // Minimum number of connections to maintain
-      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-      
-      // Retry configuration
-      retryWrites: true,
-      retryReads: true,
-      
-      // Write concern
-      w: "majority",
-      
-      // Family preference for DNS resolution (IPv4 first)
-      family: 4,
-    };
-
-    await mongoose.connect(mongoURI, connectionOptions);
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
     
-    console.log("✓ MongoDB connected successfully");
-    console.log(`  Database: ${mongoose.connection.name}`);
-    console.log(`  Host: ${mongoose.connection.host}`);
-  } catch (error) {
-    console.error("✗ MongoDB connection error:", error.message);
-    
-    // Detailed error logging for debugging
-    if (error.name === "MongoServerSelectionError") {
-      console.error("  Issue: Unable to reach MongoDB server");
-      console.error("  Check: Network connectivity and firewall settings");
-    } else if (error.message.includes("SSL") || error.message.includes("TLS")) {
-      console.error("  Issue: SSL/TLS handshake failed");
-      console.error("  Check: MongoDB Atlas IP whitelist and connection string");
-    } else if (error.message.includes("authentication")) {
-      console.error("  Issue: Authentication failed");
-      console.error("  Check: Username and password in connection string");
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is OK
+      throw error;
     }
     
-    // Retry logic with exponential backoff
-    if (retryCount < MAX_RETRIES) {
-      const delay = RETRY_DELAY * Math.pow(2, retryCount);
-      console.log(`  Retrying connection in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      setTimeout(() => connectDB(retryCount + 1), delay);
-    } else {
-      console.error(`  Failed to connect after ${MAX_RETRIES} attempts`);
-      if (process.env.NODE_ENV !== "production") {
-        process.exit(1);
-      }
+    console.log("✓ Supabase connected successfully");
+    console.log(`  Database: PostgreSQL`);
+    console.log(`  URL: ${process.env.SUPABASE_URL}`);
+  } catch (error) {
+    console.error("✗ Supabase connection error:", error.message);
+    console.error("  Check your SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env");
+    
+    if (process.env.NODE_ENV !== "production") {
+      process.exit(1);
     }
   }
 };
-
-// Handle MongoDB connection events with improved logging
-mongoose.connection.on("connected", () => {
-  console.log("✓ Mongoose connected to MongoDB");
-});
-
-mongoose.connection.on("disconnected", () => {
-  console.warn("⚠ Mongoose disconnected from MongoDB");
-  if (process.env.NODE_ENV === "production") {
-    console.log("  Attempting to reconnect...");
-    setTimeout(connectDB, 5000);
-  }
-});
-
-mongoose.connection.on("reconnected", () => {
-  console.log("✓ Mongoose reconnected to MongoDB");
-});
-
-mongoose.connection.on("error", (err) => {
-  console.error("✗ MongoDB connection error:", err.message);
-  
-  // Handle specific SSL/TLS errors
-  if (err.message.includes("SSL") || err.message.includes("TLS")) {
-    console.error("  SSL/TLS Error Details:");
-    console.error("  - Ensure MongoDB Atlas cluster is accessible");
-    console.error("  - Verify your IP address is whitelisted (0.0.0.0/0 for all IPs)");
-    console.error("  - Check that your connection string includes SSL parameters");
-  }
-});
 
 // Routes
 try {
@@ -185,27 +124,23 @@ app.use("*", (req, res) => {
 
 // Graceful shutdown handling
 process.on("SIGTERM", async () => {
-  try {
-    await mongoose.connection.close();
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() => {
+    console.log("Server closed");
     process.exit(0);
-  } catch (error) {
-    console.error("Error closing MongoDB connection:", error);
-    process.exit(1);
-  }
+  });
 });
 
 process.on("SIGINT", async () => {
-  try {
-    await mongoose.connection.close();
+  console.log("SIGINT received, shutting down gracefully...");
+  server.close(() => {
+    console.log("Server closed");
     process.exit(0);
-  } catch (error) {
-    console.error("Error closing MongoDB connection:", error);
-    process.exit(1);
-  }
+  });
 });
 
-// Connect to database
-connectDB();
+// Verify Supabase connection
+verifySupabaseConnection();
 
 // Start server
 const server = app.listen(PORT, "0.0.0.0", () => {
