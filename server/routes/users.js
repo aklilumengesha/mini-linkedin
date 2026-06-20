@@ -49,7 +49,15 @@ router.get("/search", async (req, res) => {
       .ilike('name', `%${searchQuery}%`)
       .limit(10);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error searching users:", error);
+      return res.status(500).json({ message: "Failed to search users" });
+    }
+
+    // Handle null or undefined results
+    if (!users || !Array.isArray(users)) {
+      return res.json([]);
+    }
 
     // Transform to match frontend expectations (convert snake_case to camelCase)
     const transformedUsers = users.map(user => ({
@@ -74,12 +82,16 @@ router.get("/:firebaseUid", async (req, res) => {
       .from('users')
       .select('*')
       .eq('firebase_uid', req.params.firebaseUid)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single()
 
-    if (error && error.code === 'PGRST116') {
+    if (error) {
+      console.error("Error fetching user:", error);
+      return res.status(500).json({ message: error.message });
+    }
+
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (error) throw error;
 
     // Transform to camelCase for frontend compatibility
     const transformedUser = {
@@ -96,6 +108,7 @@ router.get("/:firebaseUid", async (req, res) => {
 
     res.json(transformedUser);
   } catch (error) {
+    console.error("Error in GET user:", error);
     res.status(500).json({ message: error.message });
   }
 });
